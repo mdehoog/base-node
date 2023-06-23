@@ -32,11 +32,12 @@ RUN tar -xvf ./$VERSION.tar.gz --strip-components=1
 
 RUN go run build/ci.go install -static ./cmd/geth
 
-FROM golang:1.19
+FROM ubuntu:latest
 
 RUN apt-get update && \
-    apt-get install -y jq curl && \
+    apt-get install -y jq curl supervisor && \
     rm -rf /var/lib/apt/lists
+RUN mkdir -p /var/log/supervisor
 
 WORKDIR /app
 
@@ -44,6 +45,9 @@ COPY --from=op /app/op-node/bin/op-node ./
 COPY --from=op /app/op-batcher/bin/op-batcher ./
 COPY --from=op /app/op-proposer/bin/op-proposer ./
 COPY --from=geth /app/build/bin/geth ./
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY geth-entrypoint .
 COPY op-node-entrypoint .
 COPY goerli ./goerli
+
+CMD ["/usr/bin/supervisord"]
